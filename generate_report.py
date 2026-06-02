@@ -70,7 +70,7 @@ class PDF(FPDF):
         self.cell(0, 6, f"Sayfa {self.page_no() - 1}", align="C")
 
     # ── Kapak Sayfası ─────────────────────────────────────────────────────────
-    def cover(self, members):
+    def cover(self, members=None):
         self.add_page()
 
         # Üniversite & fakülte bilgisi
@@ -112,31 +112,15 @@ class PDF(FPDF):
         self.set_line_width(0.5)
         self.line(35, self.get_y(), 175, self.get_y())
 
-        # Grup üyeleri
+        # Hazırlayan
         self.ln(14)
         self.set_font("Ar", "B", 11)
         self.set_text_color(*C_DARK)
-        self.cell(0, 8, "Grup Üyeleri", align="C")
+        self.cell(0, 8, "Hazırlayan", align="C")
         self.ln(12)
-
-        col_w = [100, 50]
-        # Tablo başlığı
-        self.set_fill_color(*C_TH_BG)
-        self.set_text_color(255, 255, 255)
-        self.set_font("Ar", "B", 10)
-        self.set_x(35)
-        self.cell(col_w[0], 7, "Ad Soyad", border=1, fill=True, align="C")
-        self.cell(col_w[1], 7, "Öğrenci No", border=1, fill=True, align="C")
-        self.ln()
-
-        for i, (name, num) in enumerate(members):
-            self.set_fill_color(*(C_TR_ODD if i % 2 == 0 else C_TR_EVN))
-            self.set_text_color(*C_BODY)
-            self.set_font("Ar", "", 10)
-            self.set_x(35)
-            self.cell(col_w[0], 7, name,  border=1, fill=True, align="L")
-            self.cell(col_w[1], 7, num,   border=1, fill=True, align="C")
-            self.ln()
+        self.set_font("Ar", "", 10)
+        self.set_text_color(*C_BODY)
+        self.cell(0, 7, "Bu proje Semanur Şirin tarafından hazırlanmıştır.", align="C")
 
         # Tarih
         self.ln(20)
@@ -208,19 +192,12 @@ class PDF(FPDF):
 # ─────────────────────────────────────────────────────────────────────────────
 def build(out="rapor.pdf"):
 
-    members = [
-        ("Semanur Şirin",      "240121009"),
-        ("İlayda Göksu",       "240121002"),
-        ("Sudenaz Güven",      "240121024"),
-        ("Nuh Benhur Güler",   "240121006"),
-    ]
-
     p = PDF()
 
     # ══════════════════════════════════════════════════════════════════════════
     # KAPAK
     # ══════════════════════════════════════════════════════════════════════════
-    p.cover(members)
+    p.cover()
 
     # ══════════════════════════════════════════════════════════════════════════
     # BÖLÜM 1 — GİRİŞ
@@ -622,31 +599,18 @@ def build(out="rapor.pdf"):
     # ══════════════════════════════════════════════════════════════════════════
     p.sec(6, "İş Bölümü")
     p.txt(
-        "Bu proje, grup üyelerinin tamamı tarafından birlikte planlanmış, "
-        "kodlanmış ve test edilmiştir. Model mimarisinden arayüz tasarımına, "
-        "veri artırımı stratejisinden operatör sembolü seçimine kadar tüm "
-        "kararlar ortak alınmış ve her adım grup olarak hayata geçirilmiştir."
-    )
-    p.ln(2)
-    p.tbl(
-        ["Ad Soyad", "Öğrenci No", "Katkı"],
-        [
-            ["Semanur Şirin",    "240121009", "Tüm proje aşamaları (ortak)"],
-            ["İlayda Göksu",     "240121002", "Tüm proje aşamaları (ortak)"],
-            ["Sudenaz Güven",    "240121024", "Tüm proje aşamaları (ortak)"],
-            ["Nuh Benhur Güler", "240121006", "Tüm proje aşamaları (ortak)"],
-        ],
-        widths=[58, 40, 68],
+        "Bu proje Semanur Şirin tarafından planlanmış, kodlanmış ve test edilmiştir. "
+        "Model mimarisinden arayüz tasarımına, veri artırımı stratejisinden operatör "
+        "sembolü seçimine kadar tüm kararlar Semanur Şirin tarafından alınmıştır."
     )
     p.ln(2)
     p.txt(
-        "Proje kapsamındaki başlıca ortak çalışma alanları: CNN model tasarımı "
-        "ve eğitimi; veri ön işleme ve artırımı pipeline'ı; operatör tanıma için "
-        "sentetik veri üretimi ve model eğitimi; Tkinter GUI tasarımı ve canlı "
-        "tahmin entegrasyonu; confusion matrix ve model karşılaştırma "
-        "görselleştirmeleri; aşırı öğrenme önlemleri (Dropout, BatchNorm, "
-        "Early Stopping, Label Smoothing); sınıf ağırlıklandırması ile rakam-8 "
-        "performans iyileştirmesi; / operatörüne geçiş kararı."
+        "Proje kapsamındaki başlıca çalışma alanları: CNN model tasarımı ve eğitimi; "
+        "veri ön işleme ve artırımı pipeline'ı; operatör tanıma için sentetik veri "
+        "üretimi ve model eğitimi; Tkinter GUI tasarımı ve canlı tahmin entegrasyonu; "
+        "confusion matrix ve model karşılaştırma görselleştirmeleri; aşırı öğrenme "
+        "önlemleri (Dropout, BatchNorm, Early Stopping, Label Smoothing); sınıf "
+        "ağırlıklandırması ile rakam-8 performans iyileştirmesi; / operatörüne geçiş kararı."
     )
 
     # ══════════════════════════════════════════════════════════════════════════

@@ -1,6 +1,6 @@
 # MNIST El Yazısı Hesap Makinesi
 
-> **Yapay Zeka ve İlkeleri Dersi — Grup Projesi**
+> **Yapay Zeka ve İlkeleri Dersi — Proje**
 
 ---
 
@@ -80,11 +80,3 @@ python app.py
 - Yatay/dikey kaydırma %10
 - Yakınlaştırma %10
 - Kesme (shear) %10
-
----
-
-## Notlar / Eksikler
-
-- Modeli yeniden eğitmek için `mnist_model.keras` ve `history.json` dosyalarını silin.
-- GPU destekli ortamda eğitim çok daha hızlı gerçekleşir.
-- İleride eklenebilecek: kesirli sayı desteği, geçmiş hesaplama listesi.
