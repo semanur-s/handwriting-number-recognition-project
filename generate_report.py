@@ -594,7 +594,6 @@ def build(out="rapor.pdf"):
         "Çizim geçmişi kaydı ve hesaplama günlüğü özellikleri arayüze eklenebilir."
     )
 
-  
     p.ln(2)
     p.txt(
         "Proje kapsamındaki başlıca çalışma alanları: CNN model tasarımı ve eğitimi; "
