@@ -1,12 +1,17 @@
 """
-MNIST El Yazısı Hesap Makinesi v2
-──────────────────────────────────
-• Sol sayı: 1–3 rakam çizilir (mor)
-• Operatör : +, −, ×, ÷ çizilir (amber)
-• Sağ sayı : 1–3 rakam çizilir (mor)
-• Canlı tahmin: fare kaldırıldıktan 1 sn sonra otomatik
-• Güven skoru: her tahmin altında softmax olasılığı
-• Tüm tahminler hazır → otomatik hesaplama
+╔══════════════════════════════════════════════════════════════════════════════╗
+║        MNIST El Yazısı Hesap Makinesi — Ana GUI Uygulaması v2              ║
+║                                                                              ║
+║  📝 İşleyiş:                                                               ║
+║     1. Sol panel: 1-3 rakam çizilir (mor kutu) → soldan sağa okunur      ║
+║     2. Orta panel: Matematiksel operatör (+, −, ×, ÷) çizilir (amber)     ║
+║     3. Sağ panel: 1-3 rakam çizilir (mor kutu)                           ║
+║     4. Her alanda fare kaldırılınca 1 saniye sonra otomatik tanıma        ║
+║     5. Tüm tahminler hazır → sonuç otomatik hesaplanır                   ║
+║     6. Güven skoru: yeşil (≥%90) | sarı (%70-89) | kırmızı (<%70)        ║
+║                                                                              ║
+║  🎯 Amaç: Derin öğrenme + GUI tasarımını pratik uygulamada göster        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 import tkinter as tk
@@ -49,14 +54,31 @@ CONF_HIGH   = "#10B981"   # ≥ %90
 # ─────────────────────────────────────────────────────────────────────────────
 # Temel Çizim Alanı
 # ─────────────────────────────────────────────────────────────────────────────
+# Temel Çizim Alanı (Canvas)
+# ─────────────────────────────────────────────────────────────────────────────
+# 📌 ÖNEMLİ: DrawCanvas — Kullanıcının çizim yaptığı widget
 class DrawCanvas(tk.Canvas):
     """
-    Çizim yüzeyi.
-    • accent_color  → kenarlık rengi
-    • brush_radius  → fırça kalınlığı (piksel)
-    • on_idle       → fare durağanlaştıktan 1 sn sonra çağrılır
+    Çizim Yüzeyi (160×160 piksel)
+    
+    ÖZELLIKLER:
+    • accent_color  → Kenarlık rengi (mor rakam / amber operatör)
+    • brush_radius  → Fırça kalınlığı (piksel)
+    • on_idle       → Fare durağanlaştıktan 1 sn sonra çağrılan callback
+    
+    İÇ VERİ:
+    • _pil_img: PIL Image nesnesi (çizim yapılıyor)
+    • _pil_drw: PIL ImageDraw (çizim fonksiyonları)
+    • _timer: threading.Timer (1 sn sonra otomatik tahmin)
+    
+    ÇALIŞMA ŞEMASI:
+    1. Mouse down (_start)   → Son konum kaydet
+    2. Mouse move (_paint)   → Çizgi çiz (Tkinter + PIL)
+    3. Mouse up (_release)   → Timer başlat
+    4. 1 sn bekleme...
+    5. Timer çıkışında _fire() → on_idle() callback çağır → tahmin et
     """
-    SIZE = 160
+    SIZE = 160  # 160×160 piksel çizim alanı (28×28'e yeniden boyutlandırılacak)
 
     def __init__(self, master, accent_color, brush_radius=9, on_idle=None, **kw):
         super().__init__(

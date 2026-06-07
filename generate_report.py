@@ -594,15 +594,7 @@ def build(out="rapor.pdf"):
         "Çizim geçmişi kaydı ve hesaplama günlüğü özellikleri arayüze eklenebilir."
     )
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM 6 — İŞ BÖLÜMÜ
-    # ══════════════════════════════════════════════════════════════════════════
-    p.sec(6, "İş Bölümü")
-    p.txt(
-        "Bu proje Semanur Şirin tarafından planlanmış, kodlanmış ve test edilmiştir. "
-        "Model mimarisinden arayüz tasarımına, veri artırımı stratejisinden operatör "
-        "sembolü seçimine kadar tüm kararlar Semanur Şirin tarafından alınmıştır."
-    )
+  
     p.ln(2)
     p.txt(
         "Proje kapsamındaki başlıca çalışma alanları: CNN model tasarımı ve eğitimi; "
