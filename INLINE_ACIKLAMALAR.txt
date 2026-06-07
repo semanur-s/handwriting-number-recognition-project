@@ -1,0 +1,143 @@
+# SUNUMDA OKUYACAĞINIZ KOD SATIRLARI
+# (Her dosyaya inline açıklama ve satır numarasıyla işaret)
+
+## 📌 train_model.py
+
+Satır 32-46  — VERI ÖN İŞLEME:
+✓ Piksel normalizasyonu: [0,255] → [0.0,1.0]
+✓ Kanal boyutu eklemek: (28,28) → (28,28,1)
+✓ One-hot kodlama: 5 → [0,0,0,0,0,1,0,0,0,0]
+
+Satır 49-63 — SINIŞ AĞIRLIĞINDIRMASI:
+✓ Rakam 8'e 2.5× ağırlık → model 8'e daha dikkat gösterir
+✓ Sonuç: 8'in tanınma oranı %82 → %98
+
+Satır 67-105 — MODEL MİMARİSİ:
+✓ Conv2D(32) → BN → Conv2D(32) → MaxPool → Dropout(0.25)
+✓ Conv2D(64) → BN → Conv2D(64) → MaxPool → Dropout(0.25)
+✓ Flatten → Dense(256) + BN + Dropout(0.5) → Dense(10, Softmax)
+✓ Label Smoothing(0.1): Aşırı güveni azalt
+
+Satır 110-120 — VERİ ARTIRIMI (AUGMENTATION):
+✓ ±12° döndürme
+✓ %10 yatay/dikey kaydırma
+✓ %12 yakınlaştırma
+✓ %10 kesme (eğik yazı)
+✓ Sonuç: Her epoch farklı 60.000 varyasyon → 900.000 görüntü toplam
+
+Satır 128-142 — CALLBACKS (EĞİTİM KONTROLLERİ):
+✓ EarlyStopping: 5 epoch iyileşme yok → durdur
+✓ ReduceLROnPlateau: Durgunluk → öğrenme hızını 0.5× azalt
+
+---
+
+## 📌 train_operator.py
+
+Satır 32-39 — OPERATÖR SEÇİMİ (/):
+✓ Neden ÷ yerine / ?
+✓ ÷ → + ve − ile %40 karışma
+✓ / → Çapraz eğim → diğer 3'ten NET ayrışır
+✓ Sonuç: Doğruluk %75 → %97
+
+Satır 40-84 — SENTETİK GÖRÜNTÜ ÜRETİMİ:
+✓ Rastgele merkez (cx, cy): ±3 piksel
+✓ Rastgele çizgi (arm): ±2-3 piksel
+✓ Rastgele kalınlık (lw): 2-4 piksel
+✓ Hafif döndürme: ±12°
+✓ Gaussian gürültüsü (σ=15): Belirsizlik ekle
+
+Satır 87-119 — VERİ OLUŞTURMA:
+✓ 4 operatör × 8.000 = 32.000 görüntü
+✓ Sınırlandırılmamış (istediğimiz kadar oluştur)
+✓ Etiketlenmiş (her veri otomatik doğru label)
+✓ Kontrollü (parametreleri ayarla)
+
+---
+
+## 📌 app.py
+
+Satır 56-110 — DRAWCANVAS (ÇİZİM ALANI):
+✓ 160×160 piksel çizim alanı
+✓ Tkinter: Görsel çizim
+✓ PIL: Model tahmini için veri hazırla
+✓ Timer: 1 sn sonra otomatik tahmin
+
+Satır 470-487 — RAKAM TAHMİN ETME (INFERENCE):
+✓ Çizimi 28×28 float32 [0,1]'e dönüştür
+✓ Model.predict() → 10 olasılık
+✓ argmax() → Hangi rakam en yüksek?
+✓ max() → Olasılığı kaçyüzde?
+
+Satır 376-380 — GÜVEN SKORU RENKLENDİRMESİ:
+✓ ≥%90: Yeşil (güvenli)
+✓ %70-89: Sarı (uyar)
+✓ <%70: Kırmızı (hata)
+
+Satır 533-540 — ÇOK BASAMAKLI SAYI BİRLEŞTİRME:
+✓ 3 slot seçersen: 3 basamaklı sayı
+✓ Soldan sağa okunur: 2, 1 → 21
+✓ 3, 4 → 34
+✓ Tüm tahminler hazır → otomatik hesapla
+
+Satır 541-552 — OTOMATIK HESAPLAMA:
+✓ n1 = 21, op = "+", n2 = 34
+✓ 21 + 34 = 55 (otomatik çıkar)
+
+---
+
+## 📌 show_confusion_matrix.py
+
+Satır 25-30 — CONFUSION MATRİS:
+✓ Model tahminleri al
+✓ 10×10 matris oluştur
+✓ Satırlar: Gerçek rakam
+✓ Sütunlar: Tahmin edilen rakam
+✓ Diyagonal: Doğru (%99+ istediğimiz)
+✓ Diyagonal dışı: Hatalar
+
+TİPİK KARIŞMALAR:
+✓ 8 → 0, 6, 9 (Kapalı döngü)
+✓ 4 → 9 (Üst yay)
+✓ 3 → 5, 8 (Orta yay)
+✓ 7 → 1 (Gövde)
+
+---
+
+## 📌 show_comparison.py
+
+AUGMENTATION ETKİSİ:
+✓ Augmentation VAR: Eğitim YAVAŞ, doğrulama STABIL
+✓ Augmentation YOK: Eğitim HIZLI, doğrulama SAP
+
+OVERFITTING BOŞLUĞU:
+✓ Aug. VAR: eğitim%97 - doğrulama%96.5 = %0.5 (KÜÇÜK=İYİ)
+✓ Aug. YOK: eğitim%99 - doğrulama%95 = %4 (BÜYÜK=KÖTÜ)
+
+4 GRAFIK:
+1. Eğitim Doğruluğu (Epoch başına)
+2. Eğitim Kaybı (Epoch başına)
+3. Doğrulama Doğruluğu (Epoch başına)
+4. Doğrulama Kaybı (Epoch başına)
+
+---
+
+## 🎤 SUNUMDA SÖYLEYEBİLECEK HIZLI CÜMLELER
+
+"train_model.py'de MNIST veri setini yükleriz. Piksel değerlerini normalize ederiz,
+one-hot kodlama yaparız. 2 evrişim bloku ve tam bağlantılı katmanlardan oluşan
+CNN eğitiriz. Augmentation ile 60.000 görüntüyü 900.000'e çöverilir. Rakam 8'e
+2.5× ağırlık verip, early stopping ve learning rate reduction ile overfitting
+engelleriz."
+
+"train_operator.py'de sentetik operatör verisi oluştururuz. / operatörü seçmemin
+sebebi ÷ ile çok karışma yaşadığımız için. Gaussian gürültüsü ekleyip, rastgele
+döndürüp, realistic sentetik veri oluştururuz."
+
+"app.py'de GUI tasarımı. 160×160 piksel çizim alanı. Fare kaldırılınca 1 sn
+sonra otomatik tahmin. Model 10 olasılık döndürür, argmax ile seçin, güven
+skoru renk kodlu gösterilir. 3 basamaklı sayı oluştur, operatör seç, 3 basamaklı
+sayı oluştur. Tüm tahminler hazır olunca otomatik hesapla."
+
+"confusion matrix'te hangi rakamların hangileriyle karıştığını görürüz.
+Augmentation karşılaştırmasında overfitting boşluğunun nasıl küçüldüğünü
+görürüz. Bu grafikleri hemen burada çalıştırabilir, canlı tahmin yapabilirsiniz."

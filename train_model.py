@@ -28,28 +28,57 @@ BATCH_SIZE       = 64
 
 
 # ─── Veri Yükleme & Ön İşleme ─────────────────────────────────────────────────
+# 📌 ÖNEMLİ: Bu fonksiyon MNIST veri setini yükler ve modelin beklediği formata dönüştürür
 def load_data():
+    """
+    MNIST veri setini yükle ve hazırla:
+    1. 60.000 eğitim görüntüsü (28×28) + 10.000 test görüntüsü
+    2. Piksel değerleri [0, 255] → [0.0, 1.0] (normalizasyon) → ağın hızlı yakınsaması
+    3. Boyut: (N, 28, 28) → (N, 28, 28, 1) → CNN'nin 4D tensor beklediği format
+    4. Etiketler: 0-9 tam sayıları → one-hot vektör (10 boyutlu)
+    5. Ham etiketleri sakla → sample_weight hesaplaması için
+    """
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
     y_train_labels = y_train.copy()          # ham etiketler (sample weight için)
+    
+    # Normalizasyon: [0, 255] → [0.0, 1.0]
     x_train = x_train.astype("float32") / 255.0
     x_test  = x_test.astype("float32")  / 255.0
-    x_train = x_train[..., np.newaxis]   # (N, 28, 28, 1)
-    x_test  = x_test[..., np.newaxis]
+    
+    # Kanal boyutu ekle: (N, 28, 28) → (N, 28, 28, 1) — gri ton resim
+    x_train = x_train[..., np.newaxis]   # (60.000, 28, 28, 1)
+    x_test  = x_test[..., np.newaxis]    # (10.000, 28, 28, 1)
+    
+    # One-hot kodlama: 5 → [0,0,0,0,0,1,0,0,0,0]
     y_train_cat = keras.utils.to_categorical(y_train, NUM_CLASSES)
     y_test_cat  = keras.utils.to_categorical(y_test,  NUM_CLASSES)
+    
     return x_train, y_train_cat, y_train_labels, x_test, y_test_cat, y_test
 
 
 # ─── Sample Weight Hesaplama (8. sınıfa ekstra ağırlık) ───────────────────────
+# 📌 ÖNEMLİ: Rakam 8 kapalı döngü yüzünden 0, 6, 9 ile karıştırılır → ekstra ağırlık
 def compute_sample_weights(y_labels):
-    """Sınıf dengesizliğini gidermek için sample weight üret.
-    Rakam 8 sık karıştırıldığından 2.5× ekstra ağırlık alır."""
+    """
+    AMAÇ: Rakam 8'in yanlış sınıflandırıldığında model daha yüksek kayıp alsın
+    
+    balanced ağırlık:
+    - Tüm sınıflar dengeli (her sınıf ~6.000 örnek)
+    - Ama 8'in çizim şekli zor → 2.5× ek çarpan uygula
+    
+    SONUÇ: Rakam 8 yanlışsa kayıp = normal_kayıp × 2.5
+    Böylece model 8'e daha dikkat gösterir
+    """
     cw = compute_class_weight(
         class_weight="balanced",
         classes=np.arange(NUM_CLASSES),
         y=y_labels,
     )
-    cw[8] *= 2.5   # 8 rakamına ekstra ceza
+    
+    # Rakam 8'e 2.5 katı ceza uygula
+    cw[8] *= 2.5   # Index 8 = rakam 8
+    
+    # Her örneğin ağırlığını hesapla ve float32'ye çevir
     return cw[y_labels].astype("float32")
 
 
@@ -89,36 +118,78 @@ def build_model():
 
 
 # ─── Eğitim (Augmentation ile) ────────────────────────────────────────────────
+# 📌 ÖNEMLİ: VERİ ARTIRIMI (Augmentation) — Her epoch'ta farklı varyasyonlar
 def train_with_augmentation(x_train, y_train, y_train_labels, x_test, y_test_cat):
+    """
+    Veri Artırımı (Data Augmentation) Nedir?
+    
+    60.000 görüntü her epoch'ta farklı şekilde dönüştürülür:
+    • Döndürme (±12°): İnsan yazısının açı değişkenliği
+    • Yatay/dikey kaydırma (%10): Yazının sayfada konum değişimi
+    • Yakınlaştırma (%12): Farklı boyuttaki yazılar
+    • Kesme (%10): Eğik yazılar
+    
+    SONUÇ: Model 60.000 × 15 epoch = 900.000 farklı görüntü görür
+    → Gerçek çizimlere daha iyi genelleşir (Overfitting azalır)
+    """
     print("\n=== Augmentation İLE Eğitim ===")
+    
+    # Veri artırımı ayarları
     datagen = ImageDataGenerator(
-        rotation_range=12,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        zoom_range=0.12,
-        shear_range=0.1,
+        rotation_range=12,              # ±12° döndürme
+        width_shift_range=0.1,          # %10 yatay kaydırma
+        height_shift_range=0.1,         # %10 dikey kaydırma
+        zoom_range=0.12,                # %12 yakınlaştırma
+        shear_range=0.1,                # %10 kesme (eğik yazı)
     )
     datagen.fit(x_train)
 
+    # Rakam 8'e ekstra ağırlık için sample_weight hesapla
     sample_weights = compute_sample_weights(y_train_labels)
 
     model = build_model()
+    
+    # 📌 CALLBACKS (Eğitim sırasında iyileştirmeler) ───────────────────────
     callbacks = [
-        keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True),
-        keras.callbacks.ReduceLROnPlateau(factor=0.5, patience=3, min_lr=1e-6),
+        # Early Stopping: Doğrulama kaybı 5 epoch iyileşmezse durdur
+        # → Aşırı öğrenmeyi önler, en iyi ağırlıkları kurtarır
+        keras.callbacks.EarlyStopping(
+            patience=5,                    # 5 epoch boyunca iyileşme yok → durdur
+            restore_best_weights=True,     # En iyi ağırlıkları geri yükle
+            monitor="val_loss"
+        ),
+        # Öğrenme Hızını Azalt: Doğrulama durgun olunca hızı 0.5× katıyla azalt
+        # → Ince ayarlamalara imkân tanır
+        keras.callbacks.ReduceLROnPlateau(
+            factor=0.5,                    # Hızı 0.5 ile çarp (0.001 → 0.0005)
+            patience=3,                    # 3 epoch durgunluk sonra azalt
+            min_lr=1e-6                    # Min: 0.000001
+        ),
     ]
+    
+    # 📌 EĞITIM DÖNGÜSÜ ───────────────────────────────────────────────────
+    # datagen.flow: Her epoch'ta veri artırımı uygulanmış mini-batch verir
     history = model.fit(
-        datagen.flow(x_train, y_train, batch_size=BATCH_SIZE, sample_weight=sample_weights),
-        steps_per_epoch=len(x_train) // BATCH_SIZE,
-        epochs=EPOCHS,
-        validation_data=(x_test, y_test_cat),
+        datagen.flow(
+            x_train, y_train,
+            batch_size=BATCH_SIZE,
+            sample_weight=sample_weights  # Rakam 8 → 2.5× ağırlık
+        ),
+        steps_per_epoch=len(x_train) // BATCH_SIZE,  # 60.000 / 64 ≈ 938 adım
+        epochs=EPOCHS,                                 # 15 epoch
+        validation_data=(x_test, y_test_cat),         # Test setinde her epoch değerlendir
         callbacks=callbacks,
         verbose=1,
     )
+    # Eğitim sonrası: Model ve geçmişi kaydet
     model.save(MODEL_PATH)
     with open(HISTORY_PATH, "w") as f:
-        json.dump({k: [float(v) for v in vals] for k, vals in history.history.items()}, f)
-    print(f"Model kaydedildi: {MODEL_PATH}")
+        json.dump(
+            {k: [float(v) for v in vals] for k, vals in history.history.items()},
+            f
+        )
+    print(f"✓ Model kaydedildi: {MODEL_PATH}")
+    print(f"✓ Eğitim geçmişi kaydedildi: {HISTORY_PATH}")
     return model, history
 
 
