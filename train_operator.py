@@ -17,7 +17,19 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 OPERATORS       = ['+', '−', '×', '/']   # 4 sınıf: indeks 0,1,2,3
 OP_MODEL_PATH   = "operator_model.keras"
-IMG_SIZE        = 28                      # 28×28 piksel (MNIST ile uyumlu)\nNUM_OP_CLASSES  = 4\nSAMPLES_PER_OP  = 8000                # Her operatör için 8.000 örnek\nEPOCHS          = 30\nBATCH_SIZE      = 128\n\n\n# ─── Sentetik Görüntü Üretimi (PIL ile el yazısı benzeri çizimler) ───────────\n# 📌 ÖNEMLİ: MNIST veri setinde operatör görüntüsü YOK → sentetik veri gerekli\ndef _draw_plus(draw, cx, cy, arm, lw):\n    \"\"\"+ işareti: iki dik çizgi (yatay + dikey)\"\"\"\n    draw.line([cx - arm, cy, cx + arm, cy], fill=255, width=lw)      # ─ (yatay)\n    draw.line([cx, cy - arm, cx, cy + arm], fill=255, width=lw)      # │ (dikey)"
+IMG_SIZE        = 28                      # 28×28 piksel (MNIST ile uyumlu)
+NUM_OP_CLASSES  = 4
+SAMPLES_PER_OP  = 8000                # Her operatör için 8.000 örnek
+EPOCHS          = 30
+BATCH_SIZE      = 128
+
+
+# ─── Sentetik Görüntü Üretimi (PIL ile el yazısı benzeri çizimler) ───────────
+# 📌 ÖNEMLİ: MNIST veri setinde operatör görüntüsü YOK → sentetik veri gerekli
+def _draw_plus(draw, cx, cy, arm, lw):
+    """+ işareti: iki dik çizgi (yatay + dikey)"""
+    draw.line([cx - arm, cy, cx + arm, cy], fill=255, width=lw)      # ─ (yatay)
+    draw.line([cx, cy - arm, cx, cy + arm], fill=255, width=lw)      # │ (dikey)
 
 
 def _draw_minus(draw, cx, cy, arm, lw):

@@ -119,7 +119,7 @@ def build_model():
 
 # ─── Eğitim (Augmentation ile) ────────────────────────────────────────────────
 # 📌 ÖNEMLİ: VERİ ARTIRIMI (Augmentation) — Her epoch'ta farklı varyasyonlar
-def train_with_augmentation(x_train, y_train, y_train_labels, x_test, y_test_cat):
+def train_with_augmentation(x_train, y_train, y_train_labels, x_val, y_val):
     """
     Veri Artırımı (Data Augmentation) Nedir?
     
@@ -175,9 +175,9 @@ def train_with_augmentation(x_train, y_train, y_train_labels, x_test, y_test_cat
             batch_size=BATCH_SIZE,
             sample_weight=sample_weights  # Rakam 8 → 2.5× ağırlık
         ),
-        steps_per_epoch=len(x_train) // BATCH_SIZE,  # 60.000 / 64 ≈ 938 adım
+        steps_per_epoch=len(x_train) // BATCH_SIZE,  # 54.000 / 64 ≈ 843 adım
         epochs=EPOCHS,                                 # 15 epoch
-        validation_data=(x_test, y_test_cat),         # Test setinde her epoch değerlendir
+        validation_data=(x_val, y_val),               # Eğitimden ayrılan doğrulama setinde değerlendir
         callbacks=callbacks,
         verbose=1,
     )
@@ -194,7 +194,7 @@ def train_with_augmentation(x_train, y_train, y_train_labels, x_test, y_test_cat
 
 
 # ─── Eğitim (Augmentation olmadan) ───────────────────────────────────────────
-def train_without_augmentation(x_train, y_train, y_train_labels, x_test, y_test_cat):
+def train_without_augmentation(x_train, y_train, y_train_labels, x_val, y_val):
     print("\n=== Augmentation OLMADAN Eğitim ===")
     sample_weights = compute_sample_weights(y_train_labels)
 
@@ -207,7 +207,7 @@ def train_without_augmentation(x_train, y_train, y_train_labels, x_test, y_test_
         x_train, y_train,
         batch_size=BATCH_SIZE,
         epochs=EPOCHS,
-        validation_data=(x_test, y_test_cat),
+        validation_data=(x_val, y_val),
         sample_weight=sample_weights,
         callbacks=callbacks,
         verbose=1,
@@ -308,6 +308,12 @@ def plot_comparison(history_aug, history_no_aug):
 def main():
     x_train, y_train, y_train_labels, x_test, y_test_cat, y_test_labels = load_data()
 
+    # Doğrulama seti eğitim verisinden ayrılır (son 6.000 örnek).
+    # Test seti eğitim sırasında hiç görülmez; sadece en sondaki değerlendirmede kullanılır.
+    VAL_SIZE = 6000
+    x_val, y_val = x_train[-VAL_SIZE:], y_train[-VAL_SIZE:]
+    x_train, y_train, y_train_labels = x_train[:-VAL_SIZE], y_train[:-VAL_SIZE], y_train_labels[:-VAL_SIZE]
+
     # Augmentation İLE
     if os.path.exists(MODEL_PATH) and os.path.exists(HISTORY_PATH):
         print(f"{MODEL_PATH} mevcut, yeniden eğitim atlanıyor.")
@@ -316,7 +322,7 @@ def main():
             history_aug = json.load(f)
     else:
         model_aug, history_aug = train_with_augmentation(
-            x_train, y_train, y_train_labels, x_test, y_test_cat
+            x_train, y_train, y_train_labels, x_val, y_val
         )
 
     # Augmentation OLMADAN
@@ -327,7 +333,7 @@ def main():
             history_no_aug = json.load(f)
     else:
         model_no_aug, history_no_aug = train_without_augmentation(
-            x_train, y_train, y_train_labels, x_test, y_test_cat
+            x_train, y_train, y_train_labels, x_val, y_val
         )
 
     # Değerlendirme
